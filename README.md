@@ -1,8 +1,6 @@
 # pass-manager
 
-gpg password manager
-
-*"one password to rule them all"*
+Store your passwords in encrypted text files
 
 ## usage
 
@@ -13,14 +11,14 @@ pass-manager --help
 ## bash install
 
 ```sh
-cd bin
-echo "export PATH=\"\$PATH:$(pwd)\"" >> ~/.bashrc
+echo "export PATH=\"\$PATH:$(pwd)/bin\"" >> ~/.bashrc
+source ~/.bashrc
 ```
 
 ## responsibilities
 
 pass-manager:
-- encrypt and decrypt password files
+- encrypt and decrypt your secrets
 
 user:
 - manage gpg keys
@@ -33,3 +31,5 @@ user:
 ```sh
 gpg --full-generate-key
 ```
+
+*"one key to rule them all"*
