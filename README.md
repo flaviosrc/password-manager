@@ -1,33 +1,35 @@
 # pass-manager
 
-## uso
+gpg password manager
+
+*"one password to rule them all"*
+
+## usage
 
 ```sh
-pass-manager
+pass-manager --help
 ```
 
-## instalação via bash
+## bash install
 
-Execute na raiz do projeto:
 ```sh
-echo "export PATH=\"\$PATH:$(pwd)/bin\"" >> ~/.bashrc
+cd bin
+echo "export PATH=\"\$PATH:$(pwd)\"" >> ~/.bashrc
 ```
 
-## responsabilidades
+## responsibilities
 
-Responsabilidade da ferramenta
-- Criptografar e descriptografar arquivos
+pass-manager:
+- encrypt and decrypt password files
 
-Responsabilidade do usuário
-- Gerenciamento das chaves gpg
-- Versionamento
-- Distribuição
-- Backup
+user:
+- manage gpg keys
+- versioning
+- distribution
+- backup
 
-## gerando um par de chaves gpg
+## generating new gpg key pair
 
 ```sh
 gpg --full-generate-key
 ```
-
-Preencha GPG_ID com o endereço de e-mail usado na chave

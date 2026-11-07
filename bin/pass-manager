@@ -10,23 +10,23 @@ erro() { echo "$script_name: $*" >&2; exit 1; }
 help() {
     cat >&2 <<EOF
 Usage:
-    $script_name add ~/pass/github     # cria um arquivo criptografado
-    $script_name get ~/pass/github     # pega um aquivo criptografado
-    $script_name edit ~/pass/github    # edita um arquivo criptografado
+    $script_name new ~/pass/github     # create new pass file
+    $script_name get ~/pass/github     # get pass file content
+    $script_name edit ~/pass/github    # edit pass file
 Requires:
-    gpg          # for cripto
-    \$GPG_ID     # export GPG_ID=\"seu@email.com\"
-Editor:
+    gpg          # gnupg package for cripto
+    \$GPG_ID     # export GPG_ID=\"your@email.com\"
+Optional:
     \$EDITOR     # if not set, use vim as default 
 EOF
     exit 1
 }
 
-command -v gpg >/dev/null || erro "gpg não encontrado. Instale o pacote gnupg."
+command -v gpg >/dev/null || erro "gpg not found. install gnupg package"
 
 require_gpg_id() {
-    [ -n "${GPG_ID:-}" ] || erro "defina a variável GPG_ID (ex: export GPG_ID=\"seu@email.com\")"
-    gpg --list-keys "$GPG_ID" >/dev/null 2>&1 || erro "chave pública '$GPG_ID' não encontrada no seu chaveiro."
+    [ -n "${GPG_ID:-}" ] || erro "set GPG_ID (ex: export GPG_ID=\"your@email.com\")"
+    gpg --list-keys "$GPG_ID" >/dev/null 2>&1 || erro "public key '$GPG_ID' not found"
 }
 
 TEMP=""
@@ -41,7 +41,7 @@ trap clear_temp EXIT
 trap 'exit 130' INT TERM
 
 make_temp() {
-    temp=$(mktemp)
+    TEMP=$(mktemp)
 }
 
 open_editor() {
@@ -49,59 +49,58 @@ open_editor() {
 }
 
 encrypt() {
-    local destino="$1"
-    gpg -q -e -r "$GPG_ID" -o "$destino.tmp" "$TEMP"
-    mv -f "$destino.tmp" "$destino"
+    local pass_file="$1"
+    gpg -q -e -r "$GPG_ID" -o "$pass_file.tmp" "$TEMP"
+    mv -f "$pass_file.tmp" "$pass_file"
 }
 
 cmd_add() {
-    local destino="$1"
-    [ "$destino" == *.gpg ] || destino="$destino.gpg"
-    [ -e "$destino" ] && erro "'$destino' já existe. Use: $script_name edit \"$destino\""
+    local pass_file="$1"
+    [ "$pass_file" == *.gpg ] || pass_file="$pass_file.gpg"
+    [ -e "$pass_file" ] && erro "'$pass_file' already exist"
 
     require_gpg_id
 
-    mkdir -p "$(dirname "$destino")"
+    mkdir -p "$(dirname "$pass_file")"
 
     make_temp
     open_editor
 
     if [ ! -s "$TEMP" ]; then
-        echo "Nota vazia, nada foi salvo."
+        echo "empty pass file"
         return
     fi
 
-    encrypt "$destino"
-    echo "Nota criada: $destino"
+    encrypt "$pass_file"
+    echo "created $pass_file"
 }
 
 cmd_edit() {
-    local arquivo="$1" antes depois
-    [ -f "$arquivo" ] || erro "'$arquivo' não encontrado."
+    local pass_file="$1" hash_before hash_after
+    [ -f "$pass_file" ] || erro "'$pass_file' not found"
 
     require_gpg_id
-
     make_temp
 
-    gpg -q -d "$arquivo" > "$TEMP" || erro "falha ao descriptografar '$arquivo'."
-    antes=$(sha256sum < "$TEMP")
+    gpg -q -d "$pass_file" > "$TEMP" || erro "decrypt fail for '$pass_file'"
+    hash_before=$(sha256sum < "$TEMP")
 
     open_editor
 
-    depois=$(sha256sum < "$TEMP")
-    if [ "$antes" == "$depois" ]; then
-        echo "Nenhuma alteração."
+    hash_after=$(sha256sum < "$TEMP")
+    if [ "$hash_before" == "$hash_after" ]; then
+        echo "no changes"
         return
     fi
 
-    encrypt "$destino"
-    echo "Nota atualizada: $destino"
+    encrypt "$pass_file"
+    echo "updated $pass_file"
 }
 
 cmd_get() {
-    local arquivo="$1"
-    [ -f "$arquivo" ] || erro "'$arquivo' não encontrado."
-    gpg -q -d "$arquivo" || erro "falha ao descriptografar '$arquivo'."
+    local pass_file="$1"
+    [ -f "$pass_file" ] || erro "'$pass_file' not found"
+    gpg -q -d "$pass_file" || erro "decrypt fail for '$pass_file'"
 }
 
 [ $# -eq 2 ] || help
