@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+umask 077
+
+script_name=$(basename "$0")
+
+erro() { echo "$script_name: $*" >&2; exit 1; }
+
+help() {
+    cat >&2 <<EOF
+Usage:
+    $script_name add ~/pass/github     # cria um arquivo criptografado
+    $script_name get ~/pass/github     # pega um aquivo criptografado
+    $script_name edit ~/pass/github    # edita um arquivo criptografado
+Requires:
+    gpg          # for cripto
+    \$GPG_ID     # export GPG_ID=\"seu@email.com\"
+Editor:
+    \$EDITOR     # if not set, use vim as default 
+EOF
+    exit 1
+}
+
+command -v gpg >/dev/null || erro "gpg não encontrado. Instale o pacote gnupg."
+
+require_gpg_id() {
+    [ -n "${GPG_ID:-}" ] || erro "defina a variável GPG_ID (ex: export GPG_ID=\"seu@email.com\")"
+    gpg --list-keys "$GPG_ID" >/dev/null 2>&1 || erro "chave pública '$GPG_ID' não encontrada no seu chaveiro."
+}
+
+TEMP=""
+
+clear_temp() {
+    if [ -n "$TEMP" && -e "$TEMP" ]; then
+        shred -u "$TEMP" 2>/dev/null || rm -f "$TEMP"
+    fi
+}
+
+trap clear_temp EXIT
+trap 'exit 130' INT TERM
+
+make_temp() {
+    temp=$(mktemp)
+}
+
+open_editor() {
+    "${EDITOR:-vim}" "$TEMP"
+}
+
+encrypt() {
+    local destino="$1"
+    gpg -q -e -r "$GPG_ID" -o "$destino.tmp" "$TEMP"
+    mv -f "$destino.tmp" "$destino"
+}
+
+cmd_add() {
+    local destino="$1"
+    [ "$destino" == *.gpg ] || destino="$destino.gpg"
+    [ -e "$destino" ] && erro "'$destino' já existe. Use: $script_name edit \"$destino\""
+
+    require_gpg_id
+
+    mkdir -p "$(dirname "$destino")"
+
+    make_temp
+    open_editor
+
+    if [ ! -s "$TEMP" ]; then
+        echo "Nota vazia, nada foi salvo."
+        return
+    fi
+
+    encrypt "$destino"
+    echo "Nota criada: $destino"
+}
+
+cmd_edit() {
+    local arquivo="$1" antes depois
+    [ -f "$arquivo" ] || erro "'$arquivo' não encontrado."
+
+    require_gpg_id
+
+    make_temp
+
+    gpg -q -d "$arquivo" > "$TEMP" || erro "falha ao descriptografar '$arquivo'."
+    antes=$(sha256sum < "$TEMP")
+
+    open_editor
+
+    depois=$(sha256sum < "$TEMP")
+    if [ "$antes" == "$depois" ]; then
+        echo "Nenhuma alteração."
+        return
+    fi
+
+    encrypt "$destino"
+    echo "Nota atualizada: $destino"
+}
+
+cmd_get() {
+    local arquivo="$1"
+    [ -f "$arquivo" ] || erro "'$arquivo' não encontrado."
+    gpg -q -d "$arquivo" || erro "falha ao descriptografar '$arquivo'."
+}
+
+[ $# -eq 2 ] || help
+
+case "$1" in
+    add)  cmd_add  "$2" ;;
+    edit) cmd_edit "$2" ;;
+    get)  cmd_get  "$2" ;;
+    *)    help ;;
+esac
