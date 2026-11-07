@@ -1,6 +1,6 @@
 # password-manager
 
-Store your passwords in encrypted text files
+store passwords in encrypted text files
 
 ## usage
 
