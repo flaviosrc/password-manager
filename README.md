@@ -11,7 +11,7 @@ password --help
 ## bash install
 
 ```sh
-echo "export PATH=\"\$PATH:$(pwd)/bin\"" >> ~/.bashrc
+echo "alias pm=\"$(pwd)/bin/password\"" >> ~/.bashrc
 source ~/.bashrc
 ```
 
