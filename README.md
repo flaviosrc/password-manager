@@ -1,11 +1,11 @@
 # password-manager
 
-store passwords in encrypted text files
+generates and stores passwords in encrypted text files
 
 ## usage
 
 ```sh
-password-manager --help
+password --help
 ```
 
 ## bash install
@@ -18,7 +18,7 @@ source ~/.bashrc
 ## responsibilities
 
 password-manager:
-- encrypt and decrypt your secrets
+- gen, encrypt and decrypt your passwords
 
 user:
 - manage gpg keys
