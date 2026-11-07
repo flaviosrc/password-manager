@@ -1,11 +1,11 @@
-# pass-manager
+# password-manager
 
 Store your passwords in encrypted text files
 
 ## usage
 
 ```sh
-pass-manager --help
+password-manager --help
 ```
 
 ## bash install
@@ -17,7 +17,7 @@ source ~/.bashrc
 
 ## responsibilities
 
-pass-manager:
+password-manager:
 - encrypt and decrypt your secrets
 
 user:
